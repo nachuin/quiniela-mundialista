@@ -74,13 +74,38 @@
     color:var(--text); cursor:pointer; font-size:14px; font-weight:600;
     text-align:left; transition:.12s;
   }
-  .team-btn .flag{font-size:18px;}
+  .team-btn .flag{display:inline-flex;}
+  .flag-badge{
+    display:inline-block;
+    font-size:10px;
+    font-weight:800;
+    letter-spacing:0.5px;
+    padding:3px 5px;
+    border-radius:4px;
+    line-height:1;
+    min-width:26px;
+    text-align:center;
+  }
   .team-btn.selected{
     background:linear-gradient(90deg, var(--green-dark), var(--green));
     color:#04220f; border-color:var(--green);
   }
   .team-btn:disabled{opacity:.35; cursor:not-allowed;}
   .team-btn:not(:disabled):not(.selected):hover{border-color:var(--green);}
+  .team-btn.actual-winner{
+    background:rgba(224,178,62,.18);
+    border-color:var(--gold);
+    color:var(--gold);
+  }
+  .team-btn.actual-loser{opacity:.4;}
+  .match-locked-note{
+    text-align:center;
+    font-size:10px;
+    color:var(--gold);
+    margin-top:6px;
+    font-weight:700;
+    letter-spacing:.3px;
+  }
   .vs{color:var(--dim); font-size:11px; font-weight:700; padding:0 2px;}
 
   .final-wrap{display:flex; justify-content:center;}
@@ -146,7 +171,7 @@
 <body>
 <header>
   <h1>⚽ QUINIELA MUNDIALISTA FAMILY</h1>
-  <p>Predicciones desde 8vos de Final hasta la Final — comparte este enlace con los miembros de Don Pepe y su Pandilla</p>
+  <p>Predicciones desde 8vos de Final hasta la Final — comparte este enlace con los miembros de -Don Pepe y su Pandilla-</p>
 </header>
 
 <div id="configWarning">
@@ -165,11 +190,21 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxTQmw0Ttw1R1p_vsdKV99
 
 /* ---------- DATOS DEL CUADRO ---------- */
 const FLAGS = {
-  'Paraguay':'🇵🇾','Francia':'🇫🇷','Canadá':'🇨🇦','Marruecos':'🇲🇦',
-  'Portugal':'🇵🇹','España':'🇪🇸','Estados Unidos':'🇺🇸','Bélgica':'🇧🇪',
-  'Brasil':'🇧🇷','Noruega':'🇳🇴','México':'🇲🇽','Inglaterra':'🏴',
-  'Argentina':'🇦🇷','Egipto':'🇪🇬','Suiza':'🇨🇭','Colombia':'🇨🇴'
+  'Paraguay':{code:'PY', bg:'#d52b1e'}, 'Francia':{code:'FR', bg:'#0055a4'},
+  'Canadá':{code:'CA', bg:'#d80621'}, 'Marruecos':{code:'MA', bg:'#c1272d'},
+  'Portugal':{code:'PT', bg:'#046a38'}, 'España':{code:'ES', bg:'#aa151b'},
+  'Estados Unidos':{code:'US', bg:'#3c3b6e'}, 'Bélgica':{code:'BE', bg:'#f7d117', dark:true},
+  'Brasil':{code:'BR', bg:'#009c3b'}, 'Noruega':{code:'NO', bg:'#ba0c2f'},
+  'México':{code:'MX', bg:'#006341'}, 'Inglaterra':{code:'EN', bg:'#cf142b'},
+  'Argentina':{code:'AR', bg:'#75aadb', dark:true}, 'Egipto':{code:'EG', bg:'#ce1126'},
+  'Suiza':{code:'CH', bg:'#d52b1e'}, 'Colombia':{code:'CO', bg:'#fcd116', dark:true}
 };
+function flagBadge(team){
+  const f = FLAGS[team];
+  if(!f) return '';
+  const color = f.dark ? '#04220f' : '#fff';
+  return `<span class="flag-badge" style="background:${f.bg};color:${color};">${f.code}</span>`;
+}
 
 const MATCHES = [
   {id:'m1', round:'octavos', team1:'Paraguay', team2:'Francia'},
@@ -307,34 +342,41 @@ function renderNav(){
 }
 
 /* ---------- RENDER: BRACKET ---------- */
-function renderBracket(picks, editable){
+function renderBracket(picks, editable, actual){
+  actual = actual || {};
   const rounds = ['octavos','cuartos','semifinal','final'];
   let html = '';
   for(const round of rounds){
     const matches = MATCHES.filter(m=>m.round===round);
     html += `<div class="round-title">${ROUND_LABELS[round]}</div>`;
     if(round === 'final'){
-      html += `<div class="final-wrap">${matches.map(m=>renderMatch(m,picks,editable)).join('')}</div>`;
+      html += `<div class="final-wrap">${matches.map(m=>renderMatch(m,picks,editable,actual)).join('')}</div>`;
     } else {
-      html += `<div class="bracket-grid">${matches.map(m=>renderMatch(m,picks,editable)).join('')}</div>`;
+      html += `<div class="bracket-grid">${matches.map(m=>renderMatch(m,picks,editable,actual)).join('')}</div>`;
     }
   }
   const champion = picks['f1'];
   html += `<div class="champion-box">
       <div class="label">🏆 CAMPEÓN PREDICHO</div>
-      <div class="value">${champion ? (FLAGS[champion]||'') + ' ' + champion : '— Pendiente —'}</div>
+      <div class="value">${champion ? flagBadge(champion) + ' ' + champion : '— Pendiente —'}</div>
     </div>`;
   return html;
 }
-function renderMatch(m, picks, editable){
+function renderMatch(m, picks, editable, actual){
+  actual = actual || {};
   const [t1,t2] = getOptionsFor(m, picks);
   const sel = picks[m.id];
+  const realWinner = actual[m.id];
+  const locked = !!realWinner;
   const btn = (team)=>{
     if(!team) return `<button class="team-btn" disabled><span class="flag">⏳</span> Pendiente</button>`;
     const isSel = sel===team;
-    const disabled = !editable ? 'disabled' : '';
-    return `<button class="team-btn ${isSel?'selected':''}" ${disabled} data-match="${m.id}" data-team="${escapeAttr(team)}">
-      <span class="flag">${FLAGS[team]||'🏳️'}</span> ${team}
+    const isRealWinner = locked && realWinner === team;
+    const disabled = (!editable || locked) ? 'disabled' : '';
+    const cls = isSel ? 'selected' : '';
+    const lockedCls = locked ? (isRealWinner ? ' actual-winner' : ' actual-loser') : '';
+    return `<button class="team-btn ${cls}${lockedCls}" ${disabled} data-match="${m.id}" data-team="${escapeAttr(team)}">
+      <span class="flag">${flagBadge(team)}</span> ${team}${isRealWinner ? ' ✅' : ''}
     </button>`;
   };
   return `<div class="match">
@@ -343,11 +385,12 @@ function renderMatch(m, picks, editable){
         <span class="vs">VS</span>
         ${btn(t2)}
       </div>
+      ${locked ? `<div class="match-locked-note">🔒 Resultado real capturado — ya no se puede cambiar</div>` : ''}
     </div>`;
 }
 function attachBracketHandlers(container, picks, editable, onChangeCb){
   if(!editable) return;
-  container.querySelectorAll('.team-btn[data-match]').forEach(btn=>{
+  container.querySelectorAll('.team-btn[data-match]:not([disabled])').forEach(btn=>{
     btn.onclick = ()=>{
       const matchId = btn.dataset.match;
       const team = btn.dataset.team;
@@ -359,16 +402,18 @@ function attachBracketHandlers(container, picks, editable, onChangeCb){
 }
 
 /* ---------- RENDER: TAB "MINE" ---------- */
-function renderMine(){
+async function renderMine(){
   const main = document.getElementById('main');
+  main.innerHTML = `<div class="card"><div class="loading">Cargando...</div></div>`;
+  await loadActual();
   main.innerHTML = `
     <div class="card">
       <input type="text" id="nameInput" placeholder="Escribe tu nombre (ej. Ignacio)" value="${escapeAttr(state.myName)}">
       <button class="btn-secondary" id="loadBtn">Cargar mi quiniela guardada</button>
-      <div class="small-note">Escribe tu nombre y toca los equipos que crees que avanzan. Al terminar, guarda tu quiniela.</div>
+      <div class="small-note">Escribe tu nombre y toca los equipos que crees que avanzan. Al terminar, guarda tu quiniela. Los partidos que ya se jugaron se bloquean automáticamente.</div>
     </div>
     <div class="card" id="bracketCard">
-      ${renderBracket(state.myPicks, true)}
+      ${renderBracket(state.myPicks, true, state.actual)}
     </div>
     <div class="card">
       <button class="btn-primary" id="saveBtn">Guardar mi quiniela</button>
@@ -402,7 +447,7 @@ function renderMine(){
 function bindMineBracket(){
   const bracketCard = document.getElementById('bracketCard');
   function refresh(){
-    bracketCard.innerHTML = renderBracket(state.myPicks, true);
+    bracketCard.innerHTML = renderBracket(state.myPicks, true, state.actual);
     attachBracketHandlers(bracketCard, state.myPicks, true, refresh);
   }
   attachBracketHandlers(bracketCard, state.myPicks, true, refresh);
@@ -438,7 +483,7 @@ async function renderBoard(){
             <tr>
               <td class="rank ${i===0?'top1':''}">${i+1}${i===0?' 🏆':''}</td>
               <td>${r.name}</td>
-              <td>${FLAGS[r.champion]||''} ${r.champion}</td>
+              <td>${flagBadge(r.champion)} ${r.champion}</td>
               <td>${r.score}</td>
             </tr>`).join('')}
         </tbody>
@@ -453,6 +498,7 @@ async function renderOthers(){
   const main = document.getElementById('main');
   main.innerHTML = `<div class="card"><div class="loading">Cargando quinielas...</div></div>`;
   const r = await loadAllPlayers();
+  await loadActual();
   if(!r || !r.ok){
     main.innerHTML = `<div class="card"><div class="empty">No se pudo conectar con la base de datos (${r && r.error ? r.error : 'error desconocido'}).</div></div>`;
     return;
@@ -477,7 +523,7 @@ async function renderOthers(){
     renderOthers();
   };
   const player = state.players.find(p=>p.slug===state.viewingSlug);
-  document.getElementById('viewBracketCard').innerHTML = renderBracket(player.picks||{}, false);
+  document.getElementById('viewBracketCard').innerHTML = renderBracket(player.picks||{}, false, state.actual);
 }
 
 /* ---------- RENDER: TAB "ADMIN" ---------- */
