@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiniela Mundial Familiar</title>
+<style>
+  :root{
+    --navy:#08152e;
+    --navy2:#0d2148;
+    --blue-line:#2e6bd6;
+    --green:#39d97a;
+    --green-dark:#1f8f52;
+    --gold:#e0b23e;
+    --text:#eaf1ff;
+    --dim:#7f93b8;
+    --card:#0f2447;
+    --card-border:#1c3763;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Roboto, Arial, sans-serif;
+    background:radial-gradient(circle at 20% 0%, #10306b 0%, var(--navy) 55%);
+    color:var(--text);
+    min-height:100vh;
+    padding-bottom:40px;
+  }
+  header{text-align:center; padding:22px 12px 10px;}
+  header h1{
+    font-size:clamp(24px,6vw,42px);
+    letter-spacing:2px;
+    margin:0;
+    color:var(--green);
+    text-shadow:0 0 18px rgba(57,217,122,.45);
+    font-weight:800;
+  }
+  header p{color:var(--dim); margin:6px 0 0; font-size:14px;}
+
+  nav{
+    display:flex; justify-content:center; gap:6px; flex-wrap:wrap;
+    padding:14px 10px; position:sticky; top:0;
+    background:rgba(8,21,46,.92); backdrop-filter:blur(6px);
+    z-index:10; border-bottom:1px solid var(--card-border);
+  }
+  nav button{
+    background:transparent; border:1px solid var(--card-border);
+    color:var(--dim); padding:9px 14px; border-radius:20px;
+    font-size:13px; cursor:pointer; font-weight:600; transition:.15s;
+  }
+  nav button.active{background:var(--green); color:#04220f; border-color:var(--green);}
+  nav button:hover:not(.active){border-color:var(--green); color:var(--green);}
+
+  main{max-width:980px; margin:0 auto; padding:14px 14px 40px;}
+
+  .card{
+    background:var(--card); border:1px solid var(--card-border);
+    border-radius:14px; padding:16px; margin-bottom:16px;
+  }
+  .round-title{
+    text-align:center; color:var(--gold); font-weight:800;
+    letter-spacing:3px; font-size:14px; margin:22px 0 12px; text-transform:uppercase;
+  }
+  .round-title:first-child{margin-top:0;}
+
+  .bracket-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px 16px;}
+  @media (max-width:560px){ .bracket-grid{grid-template-columns:1fr;} }
+
+  .match{background:var(--navy2); border:1px solid var(--card-border); border-radius:10px; padding:8px;}
+  .match .teams{display:flex; align-items:center; gap:6px;}
+  .team-btn{
+    flex:1; display:flex; align-items:center; gap:8px; padding:9px 10px;
+    border-radius:8px; border:1px solid var(--card-border); background:transparent;
+    color:var(--text); cursor:pointer; font-size:14px; font-weight:600;
+    text-align:left; transition:.12s;
+  }
+  .team-btn .flag{font-size:18px;}
+  .team-btn.selected{
+    background:linear-gradient(90deg, var(--green-dark), var(--green));
+    color:#04220f; border-color:var(--green);
+  }
+  .team-btn:disabled{opacity:.35; cursor:not-allowed;}
+  .team-btn:not(:disabled):not(.selected):hover{border-color:var(--green);}
+  .vs{color:var(--dim); font-size:11px; font-weight:700; padding:0 2px;}
+
+  .final-wrap{display:flex; justify-content:center;}
+  .final-wrap .match{width:100%; max-width:360px;}
+
+  .champion-box{
+    text-align:center; margin-top:16px; padding:14px;
+    border:2px dashed var(--gold); border-radius:12px; background:rgba(224,178,62,.06);
+  }
+  .champion-box .label{color:var(--gold); font-size:12px; letter-spacing:2px; font-weight:800;}
+  .champion-box .value{font-size:22px; font-weight:800; margin-top:6px;}
+
+  input[type=text]{
+    width:100%; padding:11px 12px; border-radius:8px; border:1px solid var(--card-border);
+    background:var(--navy2); color:var(--text); font-size:15px; margin-bottom:10px;
+  }
+  input[type=text]:focus{outline:none; border-color:var(--green);}
+
+  .btn-primary{
+    background:var(--green); color:#04220f; border:none; padding:12px 18px;
+    border-radius:9px; font-weight:800; font-size:14px; cursor:pointer; width:100%;
+  }
+  .btn-primary:disabled{opacity:.5; cursor:not-allowed;}
+  .btn-secondary{
+    background:transparent; border:1px solid var(--card-border); color:var(--text);
+    padding:10px 14px; border-radius:9px; font-weight:600; cursor:pointer; font-size:13px;
+    width:100%; margin-bottom:6px;
+  }
+
+  .status-msg{text-align:center; font-size:13px; color:var(--green); margin-top:8px; min-height:18px;}
+  .status-msg.error{color:#ff6b6b;}
+
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th,td{padding:10px 8px; text-align:left; border-bottom:1px solid var(--card-border);}
+  th{color:var(--dim); font-size:12px; text-transform:uppercase; letter-spacing:1px;}
+  tr:hover td{background:rgba(57,217,122,.05);}
+  .rank{font-weight:800; color:var(--gold);}
+  .rank.top1{color:#ffd54a; font-size:16px;}
+
+  select{
+    width:100%; padding:10px; border-radius:8px; background:var(--navy2);
+    color:var(--text); border:1px solid var(--card-border); font-size:14px; margin-bottom:14px;
+  }
+
+  .empty{text-align:center; color:var(--dim); padding:30px 10px; font-size:14px;}
+  .loading{text-align:center; color:var(--dim); padding:30px 10px; font-size:14px;}
+
+  .admin-lock{max-width:320px; margin:40px auto; text-align:center;}
+  .small-note{font-size:12px; color:var(--dim); text-align:center; margin-top:4px;}
+
+  .pill{
+    display:inline-block; font-size:11px; padding:2px 8px; border-radius:10px;
+    background:rgba(57,217,122,.15); color:var(--green); margin-left:6px; font-weight:700;
+  }
+  #configWarning{
+    max-width:980px; margin:0 auto 4px; padding:10px 16px;
+    background:rgba(255,107,107,.12); border:1px solid #ff6b6b; border-radius:10px;
+    color:#ffb3b3; font-size:13px; text-align:center; display:none;
+  }
+  #configWarning code{background:rgba(0,0,0,.3); padding:2px 5px; border-radius:4px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚽ QUINIELA MUNDIAL FAMILIAR</h1>
+  <p>Predicciones desde 8vos de Final hasta la Final — comparte este enlace con toda la familia</p>
+</header>
+
+<div id="configWarning">
+  ⚠️ Falta configurar la conexión con Google Sheets. Edita la constante <code>GAS_URL</code>
+  al inicio del &lt;script&gt; en este archivo y pega ahí la URL de tu Web App de Google Apps Script (termina en <code>/exec</code>).
+</div>
+
+<nav id="nav"></nav>
+<main id="main"></main>
+
+<script>
+/* =====================================================================
+   CONFIGURA AQUÍ LA URL DE TU GOOGLE APPS SCRIPT (termina en /exec)
+   ===================================================================== */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxTQmw0Ttw1R1p_vsdKV99m6h7OqiAicvm0i89dcKoQik8Qe23QVYmRferLsvmwnonRA/exec';
+
+/* ---------- DATOS DEL CUADRO ---------- */
+const FLAGS = {
+  'Paraguay':'🇵🇾','Francia':'🇫🇷','Canadá':'🇨🇦','Marruecos':'🇲🇦',
+  'Portugal':'🇵🇹','España':'🇪🇸','Estados Unidos':'🇺🇸','Bélgica':'🇧🇪',
+  'Brasil':'🇧🇷','Noruega':'🇳🇴','México':'🇲🇽','Inglaterra':'🏴',
+  'Argentina':'🇦🇷','Egipto':'🇪🇬','Suiza':'🇨🇭','Colombia':'🇨🇴'
+};
+
+const MATCHES = [
+  {id:'m1', round:'octavos', team1:'Paraguay', team2:'Francia'},
+  {id:'m2', round:'octavos', team1:'Canadá', team2:'Marruecos'},
+  {id:'m3', round:'octavos', team1:'Portugal', team2:'España'},
+  {id:'m4', round:'octavos', team1:'Estados Unidos', team2:'Bélgica'},
+  {id:'m5', round:'octavos', team1:'Brasil', team2:'Noruega'},
+  {id:'m6', round:'octavos', team1:'México', team2:'Inglaterra'},
+  {id:'m7', round:'octavos', team1:'Argentina', team2:'Egipto'},
+  {id:'m8', round:'octavos', team1:'Suiza', team2:'Colombia'},
+  {id:'c1', round:'cuartos', from:['m1','m2']},
+  {id:'c2', round:'cuartos', from:['m3','m4']},
+  {id:'c3', round:'cuartos', from:['m5','m6']},
+  {id:'c4', round:'cuartos', from:['m7','m8']},
+  {id:'s1', round:'semifinal', from:['c1','c2']},
+  {id:'s2', round:'semifinal', from:['c3','c4']},
+  {id:'f1', round:'final', from:['s1','s2']},
+];
+
+const POINTS = {octavos:1, cuartos:2, semifinal:4, final:8};
+const ROUND_LABELS = {octavos:'Octavos de Final', cuartos:'Cuartos de Final', semifinal:'Semifinal', final:'Final'};
+const ADMIN_PASS = 'mundial2026';
+
+const CONFIG_OK = GAS_URL && GAS_URL.indexOf('PEGA_AQUI') === -1 && GAS_URL.indexOf('/exec') > -1;
+
+/* ---------- ESTADO ---------- */
+let state = {
+  tab:'mine', myName:'', myPicks:{},
+  players:[], actual:{}, playersLoaded:false, actualLoaded:false,
+  adminUnlocked:false, viewingSlug:null,
+};
+
+/* ---------- HELPERS ---------- */
+function slugify(name){
+  return name.trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+}
+function escapeAttr(s){ return s.replace(/"/g,'&quot;'); }
+
+function getOptionsFor(match, picks){
+  if(match.team1) return [match.team1, match.team2];
+  const a = picks[match.from[0]];
+  const b = picks[match.from[1]];
+  return [a||null, b||null];
+}
+function reconcile(picks){
+  for(const m of MATCHES){
+    if(!m.from) continue;
+    const opts = getOptionsFor(m, picks).filter(Boolean);
+    if(picks[m.id] && !opts.includes(picks[m.id])){
+      delete picks[m.id];
+    }
+  }
+}
+function computeScore(picks, actual){
+  let total = 0;
+  for(const m of MATCHES){
+    if(picks[m.id] && actual[m.id] && picks[m.id] === actual[m.id]){
+      total += POINTS[m.round];
+    }
+  }
+  return total;
+}
+
+/* ---------- API (Google Apps Script) ---------- */
+async function apiGet(action){
+  if(!CONFIG_OK) return {ok:false, error:'GAS_URL no configurada'};
+  try{
+    const res = await fetch(GAS_URL + '?action=' + encodeURIComponent(action));
+    return await res.json();
+  }catch(e){
+    return {ok:false, error: (e && e.message) ? e.message : String(e)};
+  }
+}
+async function apiPost(payload){
+  if(!CONFIG_OK) return {ok:false, error:'GAS_URL no configurada'};
+  try{
+    const res = await fetch(GAS_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(payload)
+    });
+    return await res.json();
+  }catch(e){
+    return {ok:false, error: (e && e.message) ? e.message : String(e)};
+  }
+}
+
+async function loadActual(){
+  const r = await apiGet('getResults');
+  state.actual = (r && r.ok) ? (r.results || {}) : {};
+  state.actualLoaded = true;
+  return r;
+}
+async function loadAllPlayers(){
+  const r = await apiGet('getPicks');
+  state.players = (r && r.ok) ? (r.players || []) : [];
+  state.playersLoaded = true;
+  return r;
+}
+async function saveMyPicks(){
+  if(!CONFIG_OK) return {ok:false, msg:'Falta configurar GAS_URL con la URL de tu Google Apps Script.'};
+  if(!state.myName.trim()) return {ok:false, msg:'Escribe tu nombre primero.'};
+  const r = await apiPost({action:'savePicks', name: state.myName.trim(), picks: state.myPicks});
+  if(!r || !r.ok) return {ok:false, msg:'No se pudo guardar (' + (r && r.error ? r.error : 'error desconocido') + ').'};
+  return {ok:true, msg:'¡Quiniela guardada!'};
+}
+async function loadMyExisting(){
+  const r = await apiGet('getPicks');
+  if(r && r.ok){
+    const slug = slugify(state.myName);
+    const found = (r.players || []).find(p => p.slug === slug);
+    if(found) state.myPicks = found.picks || {};
+    return {ok:true};
+  }
+  return {ok:false, error: r && r.error};
+}
+
+/* ---------- RENDER: NAV ---------- */
+function renderNav(){
+  const tabs = [
+    ['mine','Mi Quiniela'],
+    ['board','Tabla de Posiciones'],
+    ['others','Ver Otras Quinielas'],
+    ['admin','Admin']
+  ];
+  const nav = document.getElementById('nav');
+  nav.innerHTML = tabs.map(([key,label]) =>
+    `<button data-tab="${key}" class="${state.tab===key?'active':''}">${label}</button>`
+  ).join('');
+  nav.querySelectorAll('button').forEach(btn=>{
+    btn.onclick = ()=>{ state.tab = btn.dataset.tab; route(); };
+  });
+}
+
+/* ---------- RENDER: BRACKET ---------- */
+function renderBracket(picks, editable){
+  const rounds = ['octavos','cuartos','semifinal','final'];
+  let html = '';
+  for(const round of rounds){
+    const matches = MATCHES.filter(m=>m.round===round);
+    html += `<div class="round-title">${ROUND_LABELS[round]}</div>`;
+    if(round === 'final'){
+      html += `<div class="final-wrap">${matches.map(m=>renderMatch(m,picks,editable)).join('')}</div>`;
+    } else {
+      html += `<div class="bracket-grid">${matches.map(m=>renderMatch(m,picks,editable)).join('')}</div>`;
+    }
+  }
+  const champion = picks['f1'];
+  html += `<div class="champion-box">
+      <div class="label">🏆 CAMPEÓN PREDICHO</div>
+      <div class="value">${champion ? (FLAGS[champion]||'') + ' ' + champion : '— Pendiente —'}</div>
+    </div>`;
+  return html;
+}
+function renderMatch(m, picks, editable){
+  const [t1,t2] = getOptionsFor(m, picks);
+  const sel = picks[m.id];
+  const btn = (team)=>{
+    if(!team) return `<button class="team-btn" disabled><span class="flag">⏳</span> Pendiente</button>`;
+    const isSel = sel===team;
+    const disabled = !editable ? 'disabled' : '';
+    return `<button class="team-btn ${isSel?'selected':''}" ${disabled} data-match="${m.id}" data-team="${escapeAttr(team)}">
+      <span class="flag">${FLAGS[team]||'🏳️'}</span> ${team}
+    </button>`;
+  };
+  return `<div class="match">
+      <div class="teams">
+        ${btn(t1)}
+        <span class="vs">VS</span>
+        ${btn(t2)}
+      </div>
+    </div>`;
+}
+function attachBracketHandlers(container, picks, editable, onChangeCb){
+  if(!editable) return;
+  container.querySelectorAll('.team-btn[data-match]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const matchId = btn.dataset.match;
+      const team = btn.dataset.team;
+      picks[matchId] = team;
+      reconcile(picks);
+      onChangeCb();
+    };
+  });
+}
+
+/* ---------- RENDER: TAB "MINE" ---------- */
+function renderMine(){
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="card">
+      <input type="text" id="nameInput" placeholder="Escribe tu nombre (ej. Ignacio)" value="${escapeAttr(state.myName)}">
+      <button class="btn-secondary" id="loadBtn">Cargar mi quiniela guardada</button>
+      <div class="small-note">Escribe tu nombre y toca los equipos que crees que avanzan. Al terminar, guarda tu quiniela.</div>
+    </div>
+    <div class="card" id="bracketCard">
+      ${renderBracket(state.myPicks, true)}
+    </div>
+    <div class="card">
+      <button class="btn-primary" id="saveBtn">Guardar mi quiniela</button>
+      <div class="status-msg" id="statusMsg"></div>
+    </div>
+  `;
+  document.getElementById('nameInput').oninput = (e)=>{ state.myName = e.target.value; };
+  document.getElementById('loadBtn').onclick = async ()=>{
+    const msg = document.getElementById('statusMsg');
+    msg.textContent = 'Cargando...'; msg.className='status-msg';
+    if(!state.myName.trim()){
+      msg.textContent = 'Escribe tu nombre primero.'; msg.className='status-msg error';
+      return;
+    }
+    const res = await loadMyExisting();
+    if(!res.ok){
+      msg.textContent = 'No se pudo cargar (' + res.error + ').'; msg.className='status-msg error';
+      return;
+    }
+    renderMine();
+  };
+  document.getElementById('saveBtn').onclick = async ()=>{
+    const msg = document.getElementById('statusMsg');
+    msg.textContent = 'Guardando...'; msg.className='status-msg';
+    const res = await saveMyPicks();
+    msg.textContent = res.msg;
+    msg.className = 'status-msg' + (res.ok ? '' : ' error');
+  };
+  bindMineBracket();
+}
+function bindMineBracket(){
+  const bracketCard = document.getElementById('bracketCard');
+  function refresh(){
+    bracketCard.innerHTML = renderBracket(state.myPicks, true);
+    attachBracketHandlers(bracketCard, state.myPicks, true, refresh);
+  }
+  attachBracketHandlers(bracketCard, state.myPicks, true, refresh);
+}
+
+/* ---------- RENDER: TAB "BOARD" ---------- */
+async function renderBoard(){
+  const main = document.getElementById('main');
+  main.innerHTML = `<div class="card"><div class="loading">Cargando tabla de posiciones...</div></div>`;
+  const r1 = await loadAllPlayers();
+  const r2 = await loadActual();
+  if(!r1 || !r1.ok){
+    main.innerHTML = `<div class="card"><div class="empty">No se pudo conectar con la base de datos (${r1 && r1.error ? r1.error : 'error desconocido'}).</div></div>`;
+    return;
+  }
+  if(state.players.length === 0){
+    main.innerHTML = `<div class="card"><div class="empty">Aún nadie ha guardado su quiniela. ¡Sé el primero en la pestaña "Mi Quiniela"!</div></div>`;
+    return;
+  }
+  const rows = state.players.map(p=>({
+    name: p.name,
+    score: computeScore(p.picks||{}, state.actual),
+    champion: (p.picks||{})['f1'] || '—'
+  })).sort((a,b)=>b.score-a.score);
+  const hasActual = Object.keys(state.actual).length > 0;
+  main.innerHTML = `
+    <div class="card">
+      <div class="round-title" style="margin-top:0;">Tabla de Posiciones ${hasActual?'':'<span class="pill">Sin resultados reales aún</span>'}</div>
+      <table>
+        <thead><tr><th>#</th><th>Nombre</th><th>Campeón elegido</th><th>Puntos</th></tr></thead>
+        <tbody>
+          ${rows.map((r,i)=>`
+            <tr>
+              <td class="rank ${i===0?'top1':''}">${i+1}${i===0?' 🏆':''}</td>
+              <td>${r.name}</td>
+              <td>${FLAGS[r.champion]||''} ${r.champion}</td>
+              <td>${r.score}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="small-note">Puntos por acierto: Octavos 1 · Cuartos 2 · Semifinal 4 · Final 8. Los resultados reales los captura el administrador en la pestaña Admin.</div>
+    </div>
+  `;
+}
+
+/* ---------- RENDER: TAB "OTHERS" ---------- */
+async function renderOthers(){
+  const main = document.getElementById('main');
+  main.innerHTML = `<div class="card"><div class="loading">Cargando quinielas...</div></div>`;
+  const r = await loadAllPlayers();
+  if(!r || !r.ok){
+    main.innerHTML = `<div class="card"><div class="empty">No se pudo conectar con la base de datos (${r && r.error ? r.error : 'error desconocido'}).</div></div>`;
+    return;
+  }
+  if(state.players.length === 0){
+    main.innerHTML = `<div class="card"><div class="empty">Todavía no hay quinielas guardadas.</div></div>`;
+    return;
+  }
+  if(!state.viewingSlug || !state.players.find(p=>p.slug===state.viewingSlug)){
+    state.viewingSlug = state.players[0].slug;
+  }
+  main.innerHTML = `
+    <div class="card">
+      <select id="playerSelect">
+        ${state.players.map(p=>`<option value="${p.slug}" ${p.slug===state.viewingSlug?'selected':''}>${p.name}</option>`).join('')}
+      </select>
+    </div>
+    <div class="card" id="viewBracketCard"></div>
+  `;
+  document.getElementById('playerSelect').onchange = (e)=>{
+    state.viewingSlug = e.target.value;
+    renderOthers();
+  };
+  const player = state.players.find(p=>p.slug===state.viewingSlug);
+  document.getElementById('viewBracketCard').innerHTML = renderBracket(player.picks||{}, false);
+}
+
+/* ---------- RENDER: TAB "ADMIN" ---------- */
+function renderAdmin(){
+  const main = document.getElementById('main');
+  if(!state.adminUnlocked){
+    main.innerHTML = `
+      <div class="card admin-lock">
+        <div class="round-title" style="margin-top:0;">Acceso Admin</div>
+        <input type="text" id="passInput" placeholder="Contraseña">
+        <button class="btn-primary" id="unlockBtn">Entrar</button>
+        <div class="status-msg" id="adminMsg"></div>
+      </div>`;
+    document.getElementById('unlockBtn').onclick = ()=>{
+      const val = document.getElementById('passInput').value;
+      if(val === ADMIN_PASS){
+        state.adminUnlocked = true;
+        renderAdmin();
+      } else {
+        document.getElementById('adminMsg').textContent = 'Contraseña incorrecta.';
+        document.getElementById('adminMsg').className = 'status-msg error';
+      }
+    };
+    return;
+  }
+  main.innerHTML = `<div class="card"><div class="loading">Cargando resultados...</div></div>`;
+  loadActual().then(()=>{
+    main.innerHTML = `
+      <div class="card">
+        <div class="round-title" style="margin-top:0;">Capturar Resultados Reales</div>
+        <div class="small-note">Marca el equipo que realmente ganó cada partido. Esto alimenta la Tabla de Posiciones.</div>
+      </div>
+      <div class="card" id="adminBracketCard">
+        ${renderBracket(state.actual, true)}
+      </div>
+      <div class="card">
+        <button class="btn-primary" id="saveActualBtn">Guardar resultados reales</button>
+        <div class="status-msg" id="adminSaveMsg"></div>
+      </div>
+    `;
+    const card = document.getElementById('adminBracketCard');
+    function refresh(){
+      card.innerHTML = renderBracket(state.actual, true);
+      attachBracketHandlers(card, state.actual, true, refresh);
+    }
+    attachBracketHandlers(card, state.actual, true, refresh);
+    document.getElementById('saveActualBtn').onclick = async ()=>{
+      const msg = document.getElementById('adminSaveMsg');
+      msg.textContent = 'Guardando...'; msg.className = 'status-msg';
+      const r = await apiPost({action:'saveResults', results: state.actual});
+      if(r && r.ok){
+        msg.textContent = '¡Resultados actualizados!'; msg.className = 'status-msg';
+      } else {
+        msg.textContent = 'Error al guardar (' + (r && r.error ? r.error : 'desconocido') + ').'; msg.className = 'status-msg error';
+      }
+    };
+  });
+}
+
+/* ---------- ROUTER ---------- */
+function route(){
+  renderNav();
+  if(state.tab === 'mine') renderMine();
+  else if(state.tab === 'board') renderBoard();
+  else if(state.tab === 'others') renderOthers();
+  else if(state.tab === 'admin') renderAdmin();
+}
+
+if(!CONFIG_OK){
+  document.getElementById('configWarning').style.display = 'block';
+}
+route();
+</script>
+</body>
+</html>
