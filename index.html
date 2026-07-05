@@ -74,7 +74,7 @@
     color:var(--text); cursor:pointer; font-size:14px; font-weight:600;
     text-align:left; transition:.12s;
   }
-  .team-btn .flag{display:inline-flex;}
+  .team-btn .flag{font-size:18px;}
   .flag-badge{
     display:inline-block;
     font-size:10px;
@@ -171,7 +171,7 @@
 <body>
 <header>
   <h1>⚽ QUINIELA MUNDIALISTA FAMILY</h1>
-  <p>Predicciones desde 8vos de Final hasta la Final — comparte este enlace con los miembros de "Don Pepe y su Pandilla"</p>
+  <p>Predicciones desde 8vos de Final hasta la Final — comparte este enlace con los miembros de Don Pepe y su Pandilla</p>
 </header>
 
 <div id="configWarning">
@@ -190,20 +190,13 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxTQmw0Ttw1R1p_vsdKV99
 
 /* ---------- DATOS DEL CUADRO ---------- */
 const FLAGS = {
-  'Paraguay':{code:'PY', bg:'#d52b1e'}, 'Francia':{code:'FR', bg:'#0055a4'},
-  'Canadá':{code:'CA', bg:'#d80621'}, 'Marruecos':{code:'MA', bg:'#c1272d'},
-  'Portugal':{code:'PT', bg:'#046a38'}, 'España':{code:'ES', bg:'#aa151b'},
-  'Estados Unidos':{code:'US', bg:'#3c3b6e'}, 'Bélgica':{code:'BE', bg:'#f7d117', dark:true},
-  'Brasil':{code:'BR', bg:'#009c3b'}, 'Noruega':{code:'NO', bg:'#ba0c2f'},
-  'México':{code:'MX', bg:'#006341'}, 'Inglaterra':{code:'EN', bg:'#cf142b'},
-  'Argentina':{code:'AR', bg:'#75aadb', dark:true}, 'Egipto':{code:'EG', bg:'#ce1126'},
-  'Suiza':{code:'CH', bg:'#d52b1e'}, 'Colombia':{code:'CO', bg:'#fcd116', dark:true}
+  'Paraguay':'🇵🇾','Francia':'🇫🇷','Canadá':'🇨🇦','Marruecos':'🇲🇦',
+  'Portugal':'🇵🇹','España':'🇪🇸','Estados Unidos':'🇺🇸','Bélgica':'🇧🇪',
+  'Brasil':'🇧🇷','Noruega':'🇳🇴','México':'🇲🇽','Inglaterra':'🏴',
+  'Argentina':'🇦🇷','Egipto':'🇪🇬','Suiza':'🇨🇭','Colombia':'🇨🇴'
 };
 function flagBadge(team){
-  const f = FLAGS[team];
-  if(!f) return '';
-  const color = f.dark ? '#04220f' : '#fff';
-  return `<span class="flag-badge" style="background:${f.bg};color:${color};">${f.code}</span>`;
+  return FLAGS[team] || '🏳️';
 }
 
 const MATCHES = [
